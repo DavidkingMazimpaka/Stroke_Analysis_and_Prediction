@@ -1,4 +1,4 @@
-# Stroke Analysisand Prediction
+# Stroke Analysis and Prediction
 
 ## Summary
 
