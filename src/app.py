@@ -1,63 +1,100 @@
-from flask import Flask, render_template, request, jsonify
-import pickle
-import os
-import numpy as np
-from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
+import streamlit as st
 import pandas as pd
+import numpy as np
+import pickle
+import matplotlib.pyplot as plt
+import seaborn as sns
+import os
 
-app = Flask(__name__)
+# Loading the model
+model_path = os.path.join('model', 'strokePredict.pkl')
+with open(model_path, 'rb') as file:
+    model = pickle.load(file)
 
-# Load the model
-def load_model():
-    model_path = os.path.join(os.path.dirname(__file__), '..', 'model', 'strokePredict.pkl')
-    with open(model_path, 'rb') as f:
-        return pickle.load(f)
+# Load the dataset
+data_path = os.path.join('dataset', 'healthcare-dataset-stroke-data.csv')
+df = pd.read_csv(data_path)
 
-model = load_model()
-# Load test data (assuming you have a CSV file with test data)
-test_data = pd.read_csv('/data/healthcare-dataset-stroke-data.csv')
-X_test = test_data.drop('stroke', axis=1)
-y_test = test_data['stroke']
+# Set page title
+st.set_page_config(page_title="Stroke Analysis and Prediction", layout="wide")
 
-@app.route('/', methods=['GET', 'POST'])
-def home():
-    if request.method == 'POST':
-        # Get input features from the form
-        features = [float(request.form[f'feature{i}']) for i in range(1, len(X_test.columns) + 1)]
-        # Make prediction
-        prediction = model.predict([features])[0]
-        return render_template('/front-end/result.html', prediction=prediction)
-    return render_template('/front-end/index.html', feature_names=X_test.columns)
+# Title
+st.title("Stroke Analysis and Prediction")
 
-@app.route('/predict', methods=['POST'])
-def predict():
-    features = request.json['features']
-    prediction = model.predict([features])[0]
-    return jsonify({'prediction': int(prediction)})
+# Sidebar for navigation
+page = st.sidebar.selectbox("Choose a page", ["Data Exploration", "Prediction"])
 
-@app.route('/evaluate', methods=['GET'])
-def evaluate():
-    y_pred = model.predict(X_test)
-    accuracy = accuracy_score(y_test, y_pred)
-    precision = precision_score(y_test, y_pred)
-    recall = recall_score(y_test, y_pred)
-    f1 = f1_score(y_test, y_pred)
-    return render_template('/front-end/evaluation.html', accuracy=accuracy, precision=precision, recall=recall, f1=f1)
+if page == "Data Exploration":
+    st.header("Data Exploration")
 
-@app.route('/retrain', methods=['POST'])
-def retrain():
-    # fetching new data here
-    # I just use the existing test data
-    new_model = type(model)()  # Create a new instance of the same model type
-    new_model.fit(X_test, y_test)
-    
-    # Save the new model
-    with open('strokePredict.pkl', 'wb') as f:
-        pickle.dump(new_model, f)
-    
-    model = new_model
-    
-    return jsonify({'message': 'Model retrained successfully'})
+    # Display basic statistics
+    st.subheader("Dataset Overview")
+    st.write(df.describe())
 
-if __name__ == '__main__':
-    app.run(debug=True)
+    # Display correlation heatmap
+    st.subheader("Correlation Heatmap")
+    corr = df.corr()
+    fig, ax = plt.subplots(figsize=(10, 8))
+    sns.heatmap(corr, annot=True, cmap='coolwarm', ax=ax)
+    st.pyplot(fig)
+
+    # Display distribution of stroke cases
+    st.subheader("Distribution of Stroke Cases")
+    fig, ax = plt.subplots()
+    df['stroke'].value_counts().plot(kind='pie', autopct='%1.1f%%', ax=ax)
+    st.pyplot(fig)
+
+elif page == "Prediction":
+    st.header("Stroke Prediction")
+
+    # Create input fields
+    gender = st.selectbox("Gender", ["Male", "Female"])
+    age = st.number_input("Age", min_value=0, max_value=120, value=30)
+    hypertension = st.selectbox("Hypertension", [0, 1])
+    heart_disease = st.selectbox("Heart Disease", [0, 1])
+    ever_married = st.selectbox("Ever Married", ["Yes", "No"])
+    work_type = st.selectbox("Work Type", ["Private", "Self-employed", "Govt_job", "children", "Never_worked"])
+    residence_type = st.selectbox("Residence Type", ["Urban", "Rural"])
+    avg_glucose_level = st.number_input("Average Glucose Level", min_value=0.0, max_value=300.0, value=100.0)
+    bmi = st.number_input("BMI", min_value=0.0, max_value=60.0, value=25.0)
+    smoking_status = st.selectbox("Smoking Status", ["formerly smoked", "never smoked", "smokes", "Unknown"])
+
+    # Create a dictionary of inputs
+    input_data = {
+        'gender': gender,
+        'age': age,
+        'hypertension': hypertension,
+        'heart_disease': heart_disease,
+        'ever_married': ever_married,
+        'work_type': work_type,
+        'Residence_type': residence_type,
+        'avg_glucose_level': avg_glucose_level,
+        'bmi': bmi,
+        'smoking_status': smoking_status
+    }
+
+    # Convert input data to DataFrame
+    input_df = pd.DataFrame([input_data])
+
+    # Preprocess input data (you may need to adjust this based on your model's requirements)
+    # For example, convert categorical variables to numerical
+    input_df['gender'] = input_df['gender'].map({'Male': 0, 'Female': 1})
+    input_df['ever_married'] = input_df['ever_married'].map({'No': 0, 'Yes': 1})
+    input_df = pd.get_dummies(input_df, columns=['work_type', 'Residence_type', 'smoking_status'])
+
+    # Make prediction
+    if st.button("Predict"):
+        prediction = model.predict(input_df)
+        probability = model.predict_proba(input_df)
+
+        st.subheader("Prediction Result")
+        if prediction[0] == 0:
+            st.write("The model predicts: No stroke")
+        else:
+            st.write("The model predicts: Stroke")
+
+        st.write(f"Probability of stroke: {probability[0][1]:.2%}")
+
+# Add a note about the model and data source
+st.sidebar.markdown("---")
+st.sidebar.write("Note: This app uses a pre-trained model and dataset for demonstration purposes. Always consult with a healthcare professional for medical advice.")
