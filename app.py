@@ -7,12 +7,12 @@ import seaborn as sns
 import os
 
 # Load the model
-model_path = os.path.join('model', 'strokePredict.pkl')
+model_path = os.path.join('model', 'strokePrediction.pkl')
 with open(model_path, 'rb') as file:
     model = pickle.load(file)
 
 # Load the dataset
-data_path = os.path.join('Dataset', 'healthcare-stroke-dataset.csv')
+data_path = os.path.join('dataset', 'healthcare-dataset-stroke-data.csv')
 df = pd.read_csv(data_path)
 
 # Set page title
@@ -31,9 +31,25 @@ if page == "Data Exploration":
     st.subheader("Dataset Overview")
     st.write(df.describe())
 
+    # Preprocess data for correlation
+    df_corr = df.copy()
+    
+    # Convert binary categorical variables
+    binary_columns = ['gender', 'ever_married', 'Residence_type']
+    for col in binary_columns:
+        df_corr[col] = pd.factorize(df_corr[col])[0]
+    
+    # Convert multi-category variables
+    multi_cat_columns = ['work_type', 'smoking_status']
+    df_corr = pd.get_dummies(df_corr, columns=multi_cat_columns)
+    
+    # Select only numeric columns
+    numeric_columns = df_corr.select_dtypes(include=[np.number]).columns
+    df_corr = df_corr[numeric_columns]
+
     # Display correlation heatmap
     st.subheader("Correlation Heatmap")
-    corr = df.corr()
+    corr = df_corr.corr()
     fig, ax = plt.subplots(figsize=(10, 8))
     sns.heatmap(corr, annot=True, cmap='coolwarm', ax=ax)
     st.pyplot(fig)
@@ -76,24 +92,45 @@ elif page == "Prediction":
     # Convert input data to DataFrame
     input_df = pd.DataFrame([input_data])
 
-    # Preprocess input data (you may need to adjust this based on your model's requirements)
-    # For example, convert categorical variables to numerical
-    input_df['gender'] = input_df['gender'].map({'Male': 0, 'Female': 1})
-    input_df['ever_married'] = input_df['ever_married'].map({'No': 0, 'Yes': 1})
-    input_df = pd.get_dummies(input_df, columns=['work_type', 'Residence_type', 'smoking_status'])
+    # Preprocess input data
+    input_df['gender'] = input_df['gender'].map({'Male': 1, 'Female': 0})
+    input_df['ever_married'] = input_df['ever_married'].map({'Yes': 1, 'No': 0})
+    
+    # One-hot encode categorical variables
+    categorical_columns = ['work_type', 'Residence_type', 'smoking_status']
+    input_df = pd.get_dummies(input_df, columns=categorical_columns)
 
     # Make prediction
     if st.button("Predict"):
-        prediction = model.predict(input_df)
-        probability = model.predict_proba(input_df)
+        try:
+            # Convert all column names to strings
+            input_df.columns = input_df.columns.astype(str)
 
-        st.subheader("Prediction Result")
-        if prediction[0] == 0:
-            st.write("The model predicts: No stroke")
-        else:
-            st.write("The model predicts: Stroke")
+            # Get the feature names that the model expects
+            model_features = [str(feature) for feature in model.feature_names_in_]
 
-        st.write(f"Probability of stroke: {probability[0][1]:.2%}")
+            # Ensure all expected features are present
+            for feature in model_features:
+                if feature not in input_df.columns:
+                    input_df[feature] = 0
+
+            # Select only the features that the model expects
+            input_df_model = input_df[model_features]
+
+            prediction = model.predict(input_df_model)
+            probability = model.predict_proba(input_df_model)
+
+            st.subheader("Prediction Result")
+            if prediction[0] == 0:
+                st.write("The model predicts: No stroke")
+            else:
+                st.write("The model predicts: Stroke")
+
+            st.write(f"Probability of stroke: {probability[0][1]:.2%}")
+        except Exception as e:
+            st.error(f"An error occurred during prediction: {str(e)}")
+            st.write("Model features:", model.feature_names_in_)
+            st.write("Input features:", input_df.columns.tolist())
 
 # Add a note about the model and data source
 st.sidebar.markdown("---")
