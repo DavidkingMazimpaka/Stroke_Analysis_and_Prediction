@@ -2,22 +2,45 @@
 
 ## Summary
 
-This Project predicts whether a patient is likely to get stroke based on the input parameters like gender, age, various diseases, and smoking status. Each row in the data provides relavant information about the patient.
-The main idea in this notebook is to try different classifiers on this data and see how this models perform and How the different metrics looks like.
+This project aims to predict whether a patient is likely to have a stroke based on various input parameters such as gender, age, medical conditions, and smoking status. The dataset contains information about patients, including their unique identifier, demographic details, medical history, and whether they have experienced a stroke.
 
-### Variables Defintions
+The main objective of this project is to explore different classification algorithms and evaluate their performance in predicting stroke risk. The notebook `stroke_prediction.ipynb` contains the implementation and analysis of the stroke prediction model.
 
-1. id: unique identifier
-2. gender: "Male", "Female" or "Other"
-3. age: age of the patient
-4. hypertension: 0 if the patient doesn't have hypertension, 1 if the patient has hypertension
-5. heart_disease: 0 if the patient doesn't have any heart diseases, 1 if the patient has a heart disease
-6. ever_married: "No" or "Yes"
-7. work_type: "children", "Govt_jov", "Never_worked", "Private" or "Self-employed"
-8. Residence_type: "Rural" or "Urban"
-9. avg_glucose_level: average glucose level in blood
-10. bmi: body mass index
-11. smoking_status: "formerly smoked", "never smoked", "smokes" or "Unknown"*
-12. stroke: 1 if the patient had a stroke or 0 if not
+### Model File
 
-Note: "Unknown" in smoking_status means that the information is unavailable for this patient.
+The `strokePrediction.pkl` file located in `model folder` which contains the trained stroke prediction model. This file can be used to make predictions on new patient data without having to retrain the model.
+
+### stroke_prediction.ipynb
+
+The `stroke_prediction.ipynb` Jupyter Notebook file contains the following:
+
+1. **Data Exploration and Preprocessing**:
+   - Load the dataset
+   - Explore the data
+   - Handle missing values
+   - Encode categorical variables
+   - Split the data into training and testing sets
+
+2. **Model Training and Evaluation**:
+   - Try different classification algorithms, such as Logistic Regression, Decision Tree, Random Forest, and others
+   - Evaluate the performance of each model using metrics like accuracy, precision, recall, and F1-score
+   - Select the best performing model and save it as `model.pkl`
+
+3. **Model Deployment**:
+   - Provide instructions on how to use the saved model (`model.pkl`) to make predictions on new patient data
+
+4. **Conclusion**:
+   - Summarize the findings
+   - Discuss the limitations of the current approach
+   - Suggest potential improvements or future work
+
+To run the `stroke_prediction.ipynb` notebook, you will need to have the following dependencies installed:
+
+- Python 3.x
+- Pandas
+- Numpy
+- Scikit-learn
+- Matplotlib
+- Seaborn
+
+Make sure to follow the instructions in the notebook to execute the code and explore the stroke prediction model.
