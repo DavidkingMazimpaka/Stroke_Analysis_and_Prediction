@@ -43,4 +43,8 @@ To run the `stroke_prediction.ipynb` notebook, you will need to have the followi
 - Matplotlib
 - Seaborn
 
+## UI Demo Video Presentation
+To open it, click [here](https://drive.google.com/file/d/1ANj0EKzx_8Xcy6GPzAvEbJ4Cc7p8ZMla/view?usp=sharing).
+
+
 Make sure to follow the instructions in the notebook to execute the code and explore the stroke prediction model.
